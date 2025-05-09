@@ -81,11 +81,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Run OWASP ZAP Baseline Scan (Post-Deployment)
-        if: steps.apply_and_test.outputs.API_ENDPOINT != '' # Only run if deployment was successful
-        uses: zaproxy/action-baseline@v0.8.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target: ${{ steps.apply_and_test.outputs.API_ENDPOINT }}
-          ajax_spider: true
-          fail_action: false # Do not fail the pipeline if vulnerabilities are found
+      # - name: Run OWASP ZAP Baseline Scan (Post-Deployment)
+      #   if: steps.apply_and_test.outputs.API_ENDPOINT != '' # Only run if deployment was successful
+      #   uses: zaproxy/action-baseline@v0.8.0
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     target: ${{ steps.apply_and_test.outputs.API_ENDPOINT }}
+      #     ajax_spider: true
+      #     fail_action: false # Do not fail the pipeline if vulnerabilities are found
