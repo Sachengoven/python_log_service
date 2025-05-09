@@ -48,13 +48,13 @@ jobs:
         working-directory: terraform
 
       - name: Run TFSec (Terraform Security Scan)
-        uses: aquasecurity/tfsec-action@v1.28.0
+        uses: aquasecurity/tfsec-action@@v1.0.0
         with:
           terraform_version: ">= 1.0.0"
           severity: critical # Adjust severity level as needed
           working_directory: terraform
           fail_on_severity: none 
-          
+
       - name: Run OWASP Dependency Check
         uses: dependency-check/Github-Action@v3
         with:
