@@ -54,10 +54,10 @@ jobs:
           echo "Running post-deployment tests..."
           if [ -n "$API_ENDPOINT" ]; then
             echo "Testing Add Log"
-            curl -X POST -H "Content-Type: application/json" -d '{"id": "test-id", "timestamp": '$(date +%s)', "severity": "info", "message": "Test log entry"}' "$API_ENDPOINT/addlog"
+            curl -s -X POST -H "Content-Type: application/json" -d '{"id": "test-id", "timestamp": '$(date +%s)', "severity": "info", "message": "Test log entry"}' "$API_ENDPOINT/addlog"
             echo ""
             echo "Testing Get Log"
-            curl -X GET "$API_ENDPOINT/getlogs"
+            curl -s -X GET "$API_ENDPOINT/getlogs"
             echo "Post-deployment tests passed."
           else
             echo "Error: API_ENDPOINT is not defined. Post-deployment tests skipped."

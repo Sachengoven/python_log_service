@@ -38,3 +38,5 @@ This Terraform code establishes the infrastructure for a log service on AWS. Key
 * API Access: Providing an API endpoint (API Gateway) for interacting with the log service.
 * API Security: Securing the API with a Web ACL (WAF).
 Due to Terraform technical issues, the WAF ACL could not be associated with the API Gateway.
+
+Please note I used a Acloud Cloud sandbox enviroment for testing and Enviroment is usualy delted after a couple of hours
