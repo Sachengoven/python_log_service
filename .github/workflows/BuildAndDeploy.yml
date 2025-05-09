@@ -1,0 +1,74 @@
+name: Deploy Log Service to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main # Change this to your main branch
+  pull_request:
+    branches:
+      - main # Change this to your main branch
+  workflow_dispatch: # Enable manual triggering
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Needed for OIDC
+      contents: read  # Needed to checkout the repo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9 # Or your desired Python version
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.OIDC_ROLE_ARN }} # Use the OIDC role ARN
+          aws-region: ${{ secrets.AWS_REGION }} #  use GitHub secrets
+
+      - name: Pre-Deployment Checks
+        run: |
+          # Add any pre-deployment checks here (e.g., linting, testing)
+          echo "Running pre-deployment checks..."
+          # Example: Run Python linter (flake8)
+          # pip install flake8
+          # flake8 .
+          echo "Pre-deployment checks passed."
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ">= 1.0.0"
+
+      - name: Terraform Init
+        run: terraform init -upgrade
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply tfplan
+        working-directory: terraform
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }} #  use GitHub secrets
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Post-Deployment Tests
+        run: |
+          # Add any post-deployment tests here (e.g., integration tests)
+          echo "Running post-deployment tests..."
+          # Example:  Use curl to test the API endpoints (replace with your actual API endpoint)
+          API_ENDPOINT=$(terraform output -raw api_endpoint)
+          echo "API Endpoint: $API_ENDPOINT"
+          curl -X POST -H "Content-Type: application/json" -d '{"id": "test-id", "timestamp": '$(date +%s)', "severity": "info", "message": "Test log entry"}' $API_ENDPOINT/log
+          curl $API_ENDPOINT/logs
+          echo "Post-deployment tests passed."
