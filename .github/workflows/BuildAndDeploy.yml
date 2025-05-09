@@ -3,10 +3,10 @@ name: Deploy Log Service to AWS Lambda
 on:
   push:
     branches:
-      - main 
+      - main
   pull_request:
     branches:
-      - main 
+      - main
   workflow_dispatch: # Enable manual triggering
 
 jobs:
@@ -19,19 +19,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Recommended for some security scanners
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9 
+          python-version: 3.9
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} 
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -45,7 +47,23 @@ jobs:
         run: terraform plan -out=tfplan
         working-directory: terraform
 
+      - name: Run TFSec (Terraform Security Scan)
+        uses: aquasecurity/tfsec-action@v1.28.0
+        with:
+          terraform_version: ">= 1.0.0"
+          severity: critical # Adjust severity level as needed
+          working_directory: terraform
+          fail_on_severity: none 
+          
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Github-Action@v3
+        with:
+          project: "python_log_service" 
+          scan_type: "All" 
+          fail_on_severity: "none" # Do not fail the pipeline
+
       - name: Set up Terraform and Apply & Get Output & Test
+        id: apply_and_test
         run: |
           terraform apply tfplan
           API_ENDPOINT=$(terraform output -raw api_endpoint)
@@ -68,3 +86,12 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Run OWASP ZAP Baseline Scan (Post-Deployment)
+        if: steps.apply_and_test.outputs.API_ENDPOINT != '' # Only run if deployment was successful
+        uses: zaproxy/action-baseline@v0.8.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: ${{ steps.apply_and_test.outputs.API_ENDPOINT }}
+          ajax_spider: true
+          fail_action: false # Do not fail the pipeline if vulnerabilities are found
