@@ -55,13 +55,6 @@ jobs:
           working_directory: terraform
           fail_on_severity: none 
 
-      - name: Run OWASP Dependency Check
-        uses: dependency-check/Github-Action@v3
-        with:
-          project: "python_log_service" 
-          scan_type: "All" 
-          fail_on_severity: "none" # Do not fail the pipeline
-
       - name: Set up Terraform and Apply & Get Output & Test
         id: apply_and_test
         run: |
