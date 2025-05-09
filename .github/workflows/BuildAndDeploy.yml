@@ -45,19 +45,23 @@ jobs:
         run: terraform plan -out=tfplan
         working-directory: terraform
 
-      - name: Terraform Apply
-        run: terraform apply tfplan
-        working-directory: terraform
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }} 
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Post-Deployment Tests
+      - name: Set up Terraform and Apply & Get Output & Test
         run: |
-          echo "Running post-deployment tests..."
+          terraform apply tfplan
           API_ENDPOINT=$(terraform output -raw api_endpoint)
           echo "API Endpoint: $API_ENDPOINT"
-          curl -X POST -H "Content-Type: application/json" -d '{"id": "test-id", "timestamp": '$(date +%s)', "severity": "info", "message": "Test log entry"}' $API_ENDPOINT/addlog
-          curl -X GET $API_ENDPOINT/getlogs
-          echo "Post-deployment tests passed."
+          echo "API_ENDPOINT=$API_ENDPOINT" >> "$GITHUB_OUTPUT" # Set output for the step
+          echo "Running post-deployment tests..."
+          if [ -n "$API_ENDPOINT" ]; then
+            curl -X POST -H "Content-Type: application/json" -d '{"id": "test-id", "timestamp": '$(date +%s)', "severity": "info", "message": "Test log entry"}' "$API_ENDPOINT/addlog"
+            curl -X GET "$API_ENDPOINT/getlogs"
+            echo "Post-deployment tests passed."
+          else
+            echo "Error: API_ENDPOINT is not defined. Post-deployment tests skipped."
+            exit 1
+          fi
+        working-directory: terraform
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
