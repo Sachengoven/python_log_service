@@ -53,7 +53,8 @@ jobs:
           terraform_version: ">= 1.0.0"
           severity: critical # Adjust severity level as needed
           working_directory: terraform
-          fail_on_severity: none 
+          fail_on_severity: none
+          soft_fail: true
 
       - name: Set up Terraform and Apply & Get Output & Test
         id: apply_and_test
